@@ -1,0 +1,6 @@
+Revision history for App::TimeTracker::Gtk3StatusIcon
+
+{{$NEXT}}
+    - port from App::TimeTracker::Gtk2TrayIcon to GTK3
+
+
