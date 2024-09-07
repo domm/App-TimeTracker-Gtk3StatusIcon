@@ -8,58 +8,81 @@ use strict;
 use warnings;
 
 use Gtk3;
-use AnyEvent;
+use IO::Async::File;
+use IO::Async::Loop::Glib;
+
 use App::TimeTracker::Proto 3.100;
 use App::TimeTracker::Data::Task;
 use File::Share qw(dist_file);
 use Clipboard;
 
+my %ICONS = (
+    lazy => dist_file( 'App-TimeTracker-Gtk3StatusIcon', 'lazy.png' ),
+    busy => dist_file( 'App-TimeTracker-Gtk3StatusIcon', 'busy.png' ),
+);
+
+my $TRACKER_HOME = App::TimeTracker::Proto->new->home;
+
 sub init {
     my ($class, $run) = @_;
-    my $storage_location = App::TimeTracker::Proto->new->home;
-
-    my $lazy = dist_file( 'App-TimeTracker-Gtk3StatusIcon', 'lazy.png' );
-    my $busy = dist_file( 'App-TimeTracker-Gtk3StatusIcon', 'busy.png' );
 
     Gtk3->init;
-    my $icon   = Gtk3::StatusIcon->new_from_file($lazy);
-
     my $menu = Gtk3::Menu->new();
-    my $item = Gtk3::MenuItem->new('...');
-    $item->signal_connect( activate => sub {
-        Clipboard->copy($item->get_label) unless $item->get_label eq 'nothing';
-    } );
-    $menu->append($item);
+    my $task = get_current_task();
+    my $icon = Gtk3::StatusIcon->new_from_file($ICONS{$task->{status}});
+    my @items;
+    for my $line ($task->{lines}->@*) {
+        my $item = Gtk3::MenuItem->new($line);
+        $item->signal_connect( activate => sub {
+            Clipboard->copy($item->get_label) if $task->{status} eq 'busy';
+        } );
+        $menu->append($item);
+        push(@items, $item);
+    }
 
     my $quit = Gtk3::ImageMenuItem->new_from_stock('gtk-quit');
     $quit->signal_connect( activate => sub { Gtk3->main_quit } );
     $menu->append($quit);
-
     $menu->show_all();
 
-    $icon->signal_connect( 'button-press-event' => sub { $menu->popup_at_pointer(  ) } );
+    $icon->signal_connect( 'activate' => sub { $menu->popup_at_pointer } );
 
-    my $current;
-    my $t = AnyEvent->timer(
-        after    => 0,
-        interval => 5,
-        cb       => sub {
-            my $task = App::TimeTracker::Data::Task->current($storage_location);
-            if ($task) {
-                $icon->set_from_file($busy);
-                $current = $task->project;
-                $current .= ' '.$task->id if $task->id;
-                $current .= ': '.$task->description if $task->description;
-                $item->set_label($current);
+    my $loop = IO::Async::Loop::Glib->new();
+
+    my $file = IO::Async::File->new(
+        filename => $TRACKER_HOME,
+        on_mtime_changed => sub {
+            my ( $self ) = @_;
+            my $task = get_current_task();
+            $icon->set_from_file($ICONS{$task->{status}});
+            for my $i (0 .. 2) {
+                $items[$i]->set_label($task->{lines}[$i]);
             }
-            else {
-                $icon->set_from_file($lazy);
-                $current = 'nothing';
-                $item->set_label($current);
-            }
-        } );
+        }
+    );
+    $loop->add( $file );
 
     Gtk3->main if $run;
+}
+
+sub get_current_task() {
+    my $task = App::TimeTracker::Data::Task->current($TRACKER_HOME);
+    if ($task) {
+        return {
+            status => 'busy',
+            lines => [
+                $task->project,
+                $task->id || 'no id',
+                $task->description || 'no description',
+            ],
+        }
+    }
+    else {
+        return {
+            status => 'lazy',
+            lines => [qw(currently doing nothing)],
+        }
+    }
 }
 
 1;
@@ -73,5 +96,4 @@ Backend for L<tracker_gtk3statusicon.pl>
 =method init
 
 Initialize the GTK3 app.
-
 
