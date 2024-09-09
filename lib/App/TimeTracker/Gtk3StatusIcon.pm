@@ -10,6 +10,7 @@ use warnings;
 use Gtk3;
 use IO::Async::File;
 use IO::Async::Loop::Glib;
+use Lock::File;
 
 use App::TimeTracker::Proto 3.100;
 use App::TimeTracker::Data::Task;
@@ -25,6 +26,16 @@ my $TRACKER_HOME = App::TimeTracker::Proto->new->home;
 
 sub init {
     my ($class, $run) = @_;
+
+    my @caller = caller();
+    my $lock;
+    if ($caller[1] =~ /tracker_gtk3statusicon.pl$/) {
+        $lock = Lock::File->new($TRACKER_HOME.'/tracker_gtk3statusicon.lock', { blocking=>0 });
+        unless ($lock) {
+            say "tracker_gtk3statusicon.pl seems to be running already...";
+            exit 0;
+        }
+    }
 
     Gtk3->init;
     my $menu = Gtk3::Menu->new();
