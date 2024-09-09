@@ -1,6 +1,7 @@
 Revision history for App::TimeTracker::Gtk3StatusIcon
 
 {{$NEXT}}
-    - port from App::TimeTracker::Gtk2TrayIcon to GTK3
 
+1.000   2024-09-09T23:11:54
+    - port from App::TimeTracker::Gtk2TrayIcon to GTK3
 

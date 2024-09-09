@@ -104,7 +104,3 @@ __END__
 
 Backend for L<tracker_gtk3statusicon.pl>
 
-=method init
-
-Initialize the GTK3 app.
-
