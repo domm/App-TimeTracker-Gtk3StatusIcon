@@ -3,6 +3,8 @@ use 5.010;
 use strict;
 use warnings;
 
+use IPC::Lockfile;
+
 # ABSTRACT: run App::TimeTracker::Gtk3StatusIcon
 # PODNAME: tracker_gtk3statusicon.pl
 # VERSION
