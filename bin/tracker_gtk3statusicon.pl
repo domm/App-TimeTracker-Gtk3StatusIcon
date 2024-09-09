@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
-use 5.010;
+
+use v5.24;
 use strict;
 use warnings;
 

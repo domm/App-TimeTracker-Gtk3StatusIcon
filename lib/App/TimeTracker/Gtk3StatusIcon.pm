@@ -3,7 +3,7 @@ package App::TimeTracker::Gtk3StatusIcon;
 # ABSTRACT: Show TimeTracker status as a GTK3 StatusIcon in the system tray
 # VERSION
 
-use 5.010;
+use v5.24;
 use strict;
 use warnings;
 
